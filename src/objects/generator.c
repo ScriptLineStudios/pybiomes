@@ -6,6 +6,7 @@
 #include "structmember.h"
 
 #include "../external/cubiomes/generator.h"
+#include "../external/cubiomes/rng.h"
 
 typedef struct {
     PyObject_HEAD
@@ -56,11 +57,79 @@ static PyMemberDef Generator_members[] = {
     {NULL}  /* Sentinel */
 };
 
+
+static PyObject *Generator_next(GeneratorObject *self, PyObject *args) {
+    uint64_t seed;
+	int bits;
+    if (!PyArg_ParseTuple(args, "Ki", &seed, &bits)) {
+        return NULL;
+    }
+	// Create a new Python tuple with two elements
+	PyObject* tuple = PyTuple_New(2);
+	int out = next(&seed, bits);
+	PyTuple_SetItem(tuple, 0, PyLong_FromLong(seed));
+	PyTuple_SetItem(tuple, 1, PyLong_FromLong(out));
+    return tuple;
+}
+
+static PyObject *Generator_next_int(GeneratorObject *self, PyObject *args) {
+    uint64_t seed;
+	int n;
+    if (!PyArg_ParseTuple(args, "Ki", &seed, &n)) {
+        return NULL;
+    }
+	
+	PyObject* tuple = PyTuple_New(2);
+	int out = nextInt(&seed, n);
+	PyTuple_SetItem(tuple, 0, PyLong_FromLong(seed));
+	PyTuple_SetItem(tuple, 1, PyLong_FromLong(out));
+    return tuple;
+}
+
+static PyObject *Generator_next_long(GeneratorObject *self, PyObject *args) {
+    uint64_t seed;
+    if (!PyArg_ParseTuple(args, "K", &seed)) {
+        return NULL;
+    }
+	
+	PyObject* tuple = PyTuple_New(2);
+	uint64_t out = nextLong(&seed);
+	PyTuple_SetItem(tuple, 0, PyLong_FromLong(seed));
+	PyTuple_SetItem(tuple, 1, PyLong_FromLong(out));
+    return tuple;
+}
+
+static PyObject *Generator_next_float(GeneratorObject *self, PyObject *args) {
+    uint64_t seed;
+    if (!PyArg_ParseTuple(args, "K", &seed)) {
+        return NULL;
+    }
+	
+	PyObject* tuple = PyTuple_New(2);
+	float out = nextFloat(&seed);
+	PyTuple_SetItem(tuple, 0, PyLong_FromLong(seed));
+	PyTuple_SetItem(tuple, 1, PyFloat_FromDouble(out));
+    return tuple;
+}
+
+static PyObject *Generator_next_double(GeneratorObject *self, PyObject *args) {
+    uint64_t seed;
+    if (!PyArg_ParseTuple(args, "K", &seed)) {
+        return NULL;
+    }
+	
+	PyObject* tuple = PyTuple_New(2);
+	float out = nextDouble(&seed);
+	PyTuple_SetItem(tuple, 0, PyLong_FromLong(seed));
+	PyTuple_SetItem(tuple, 1, PyFloat_FromDouble(out));
+    return tuple;
+}
+
 static PyObject *Generator_apply_seed(GeneratorObject *self, PyObject *args) {
     uint64_t seed;
     int dimension;
 
-    if (!PyArg_ParseTuple(args, "ki", &seed, &dimension)) {
+    if (!PyArg_ParseTuple(args, "Ki", &seed, &dimension)) {
         return NULL;
     }
 
@@ -120,6 +189,11 @@ static PyObject *Generator_is_viable_structure_pos(GeneratorObject *self, PyObje
 }
 
 static PyMethodDef Generator_methods[] = {
+    {"next", (PyCFunction) Generator_next, METH_VARARGS, "Calls next() rng function"},
+    {"next_int", (PyCFunction) Generator_next_int, METH_VARARGS, "Calls nextInt() rng function"},
+    {"next_long", (PyCFunction) Generator_next_long, METH_VARARGS, "Calls nextLong() rng function"},
+    {"next_float", (PyCFunction) Generator_next_float, METH_VARARGS, "Calls nextFloat() rng function"},
+    {"next_double", (PyCFunction) Generator_next_double, METH_VARARGS, "Calls nextDouble() rng function"},
     {"apply_seed", (PyCFunction) Generator_apply_seed, METH_VARARGS, "Applies a seed to the generator"},
     {"get_biome_at", (PyCFunction) Generator_get_biome_at, METH_VARARGS, "Get the biome at the specified location"},
     {"gen_biomes", (PyCFunction) Generator_gen_biomes, METH_VARARGS, "Get the biome at the specified location"},

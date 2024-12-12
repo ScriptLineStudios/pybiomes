@@ -49,9 +49,9 @@ static int Finder_init(FinderObject *self, PyObject *args, PyObject *kwds) {
 
 static PyObject *Finder_get_structure_pos(FinderObject *self, PyObject *args) { 
     int structure, reg_x, reg_z;
-    long seed;
+    uint64_t seed;
 
-    if (!PyArg_ParseTuple(args, "ilii", &structure, &seed, &reg_x, &reg_z)) {
+    if (!PyArg_ParseTuple(args, "iKii", &structure, &seed, &reg_x, &reg_z)) {
         return NULL;
     }
 
