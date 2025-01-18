@@ -12,6 +12,10 @@ typedef struct {
     Generator generator;
 } GeneratorObject;
 
+extern PyTypeObject GeneratorType;
+
+#define GENERATOR_OBJECT_TYPE "O!"
+
 static int Generator_traverse(GeneratorObject *self, visitproc visit, void *arg) {
     return 0;
 }
