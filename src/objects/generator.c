@@ -6,6 +6,7 @@
 #include "structmember.h"
 
 #include "../external/cubiomes/biomenoise.h"
+#include "../external/cubiomes/finders.h"
 #include "../external/cubiomes/generator.h"
 
 extern PyTypeObject SurfaceNoiseType;
@@ -146,6 +147,17 @@ static PyObject *Generator_is_viable_structure_pos(GeneratorObject *self, PyObje
     return PyBool_FromLong(ret);
 }
 
+static PyObject *Generator_is_viable_structure_terrain(GeneratorObject *self, PyObject *args) {
+    int structure, x, z;
+
+    if (!PyArg_ParseTuple(args, "iii", &structure, &x, &z)) {
+        return NULL;
+    }
+
+    int ret = isViableStructureTerrain(structure, &self->generator, x, z);
+    return PyBool_FromLong(ret);
+}
+
 static PyObject *Generator_map_approx_height(GeneratorObject *self, PyObject *args) {
     PyObject *sn_obj;
     int x, z, w, h;
@@ -193,6 +205,7 @@ static PyMethodDef Generator_methods[] = {
     {"get_biome_at", (PyCFunction) Generator_get_biome_at, METH_VARARGS, "Get the biome at the specified location"},
     {"gen_biomes", (PyCFunction) Generator_gen_biomes, METH_VARARGS, "Get the biome at the specified location"},
     {"is_viable_structure_pos", (PyCFunction) Generator_is_viable_structure_pos, METH_VARARGS, "Get the biome at the specified location"},
+    {"is_viable_structure_terrain", (PyCFunction) Generator_is_viable_structure_terrain, METH_VARARGS, "Checks if the terrain at the position is viable for the structure"},
     {"map_approx_height", (PyCFunction)Generator_map_approx_height, METH_VARARGS, "Maps an approximation of the Overworld surface height."},
     {NULL}  /* Sentinel */
 };

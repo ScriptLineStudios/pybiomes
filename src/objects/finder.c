@@ -80,7 +80,9 @@ static PyObject *Finder_get_structure_config(FinderObject *self, PyObject *args)
         return NULL;
     }
 	StructureConfig sc;
-	getStructureConfig(structureType, self->version, &sc);
+	if (!getStructureConfig(structureType, self->version, &sc)) {
+		Py_RETURN_NONE;
+	}
 	
     PyObject *dict = PyDict_New();
 
@@ -105,6 +107,16 @@ static PyObject *Finder_is_stronghold_biome(FinderObject *self, PyObject *args) 
 	
 	return PyBool_FromLong(isStrongholdBiome(self->version, id));
 	
+}
+
+static PyObject *Finder_is_viable_feature_biome(FinderObject *self, PyObject *args) {
+    int structType, biomeID;
+
+    if (!PyArg_ParseTuple(args, "ii", &structType, &biomeID)) {
+        return NULL;
+    }
+
+    return PyBool_FromLong(isViableFeatureBiome(self->version, structType, biomeID));
 }
 
 static PyObject *Finder_init_first_stronghold(FinderObject *self, PyObject *args) {
@@ -272,6 +284,28 @@ static PyObject *Finder_get_spawn(FinderObject *self, PyObject *args) {
 	return (PyObject *)ret;
 }
 
+static PyObject *Finder_estimate_spawn(FinderObject *self, PyObject *args) {
+    PyObject *gen_obj;
+
+    if (!PyArg_ParseTuple(args, "O!", &GeneratorType, &gen_obj)) {
+        return NULL;
+    }
+    if (!PyObject_TypeCheck(gen_obj, &GeneratorType)) {
+        PyErr_SetString(PyExc_TypeError, "Parameter must be a GeneratorObject");
+        return NULL;
+    }
+
+    GeneratorObject *generator_obj = (GeneratorObject *)gen_obj;
+    Generator g = generator_obj->generator;
+
+    Pos spawn_pos = estimateSpawn(&g, NULL);
+    PosObject *ret = Pos_new(&PosType, NULL, NULL);
+
+    ret->pos.x = spawn_pos.x;
+    ret->pos.z = spawn_pos.z;
+    return (PyObject *)ret;
+}
+
 
 static PyObject *Finder_chunk_generate_rnd(FinderObject *self, PyObject *args) {
     uint64_t seed;
@@ -283,6 +317,17 @@ static PyObject *Finder_chunk_generate_rnd(FinderObject *self, PyObject *args) {
     }
 	uint64_t rnd = chunkGenerateRnd(seed, chunkX, chunkZ);
     return PyLong_FromLongLong(rnd);
+}
+
+static PyObject *Finder_is_slime_chunk(FinderObject *self, PyObject *args) {
+    uint64_t seed;
+    int chunkX, chunkZ;
+
+    if (!PyArg_ParseTuple(args, "Kii", &seed, &chunkX, &chunkZ)) {
+        return NULL;
+    }
+
+    return PyBool_FromLong(isSlimeChunk(seed, chunkX, chunkZ));
 }
 
 static PyObject *Finder_get_structure_pos(FinderObject *self, PyObject *args) { 
@@ -359,10 +404,13 @@ static PyMethodDef Finder_methods[] = {
     {"get_population_seed", (PyCFunction)Finder_get_population_seed, METH_VARARGS, "Generates a population seed from a world seed and coordinates."},
     {"get_structure_config", (PyCFunction)Finder_get_structure_config, METH_VARARGS, "Finds a structure's configuration parameters"},
     {"is_stronghold_biome", (PyCFunction)Finder_is_stronghold_biome, METH_VARARGS, "Checks if the biome is valid for stronghold placement"},
+    {"is_viable_feature_biome", (PyCFunction)Finder_is_viable_feature_biome, METH_VARARGS, "Checks if the biome is valid for feature placement"},
     {"init_first_stronghold", (PyCFunction)Finder_init_first_stronghold, METH_VARARGS, "Initialises first stronghold"},
     {"next_stronghold", (PyCFunction)Finder_next_stronghold, METH_VARARGS, "Finds next stronghold"},
     {"get_spawn", (PyCFunction)Finder_get_spawn, METH_VARARGS, "Gets world spawn position"},
+    {"estimate_spawn", (PyCFunction)Finder_estimate_spawn, METH_VARARGS, "Estimates world spawn position"},
     {"chunk_generate_rnd", (PyCFunction)Finder_chunk_generate_rnd, METH_VARARGS, "Initialises and returns a random seed used in the chunk generation"},
+    {"is_slime_chunk", (PyCFunction)Finder_is_slime_chunk, METH_VARARGS, "Checks if a chunk is a slime chunk"},
     {"get_structure_pos", (PyCFunction)Finder_get_structure_pos, METH_VARARGS, "Finds a structures position within the given region"},
 	{"get_variant", (PyCFunction)Finder_get_variant, METH_VARARGS, "Gets a structures variant data (rotation, bounding box, etc.)"},
     {NULL}  /* Sentinel */

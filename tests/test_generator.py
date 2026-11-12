@@ -92,3 +92,10 @@ def test_map_approx_height(generator):
     # The height value will be a float, so we need to allow for some tolerance.
     assert pytest.approx(y_list[0], 0.01) == 77.12
     assert ids_list[0] == plains
+
+def test_is_viable_structure_terrain(generator):
+    from pybiomes.structures import Desert_Pyramid
+    seed = 1234567890
+    generator.apply_seed(seed, DIM_OVERWORLD)
+    is_valid = generator.is_viable_structure_terrain(Desert_Pyramid, 288, 1984)
+    assert isinstance(is_valid, bool)

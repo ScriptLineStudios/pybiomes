@@ -147,6 +147,8 @@ PyMODINIT_FUNC PyInit_biomes(PyModuleDef *pybiomes) {
     PyModule_AddIntMacro(mod, mangrove_swamp);                  
     PyModule_AddIntMacro(mod, cherry_grove);                    
     PyModule_AddIntMacro(mod, pale_garden);                       
+    PyModule_AddIntMacro(mod, sulfur_caves);
+    PyModule_AddIntMacro(mod, dappled_forest);
 
     return mod;
 }

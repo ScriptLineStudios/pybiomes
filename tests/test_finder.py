@@ -1,7 +1,7 @@
 import pytest
 from pybiomes import Finder, Generator, Pos
-from pybiomes.biomes import plains
-from pybiomes.structures import Village
+from pybiomes.biomes import plains, desert
+from pybiomes.structures import Village, Desert_Pyramid
 from pybiomes.versions import MC_1_21_WD
 
 @pytest.fixture
@@ -132,3 +132,53 @@ def test_get_variant(finder):
     invalid_biome_id = 999
     variant_none = finder.get_variant(struct_type, seed, block_x, block_z, invalid_biome_id)
     assert variant_none is None
+
+def test_is_slime_chunk(finder):
+    seed = 1234567890
+    assert finder.is_slime_chunk(seed, 0, 14) is True
+    assert finder.is_slime_chunk(seed, 0, 0) is False
+
+def test_estimate_spawn(finder):
+    seed = 1234567890
+    generator = Generator(MC_1_21_WD, seed)
+    spawn_pos = finder.estimate_spawn(generator)
+    assert isinstance(spawn_pos, Pos)
+    assert isinstance(spawn_pos.x, int)
+    assert isinstance(spawn_pos.z, int)
+
+def test_is_viable_feature_biome(finder):
+    assert finder.is_viable_feature_biome(Village, plains) is True
+    assert finder.is_viable_feature_biome(Desert_Pyramid, plains) is False
+    assert finder.is_viable_feature_biome(Desert_Pyramid, desert) is True
+
+def test_version_gating():
+    from pybiomes.structures import Abandoned_Camp, Trial_Chambers
+    from pybiomes.biomes import forest
+    from pybiomes.versions import MC_1_21_1, MC_26_3, MC_1_20_6
+
+    finder_old = Finder(MC_1_21_1)
+    finder_new = Finder(MC_26_3)
+
+    # Abandoned_Camp only exists in MC 26.3+
+    assert finder_old.get_structure_config(Abandoned_Camp) is None
+    assert finder_new.get_structure_config(Abandoned_Camp) is not None
+    assert finder_old.is_viable_feature_biome(Abandoned_Camp, forest) is False
+    assert finder_new.is_viable_feature_biome(Abandoned_Camp, forest) is True
+
+    # Trial_Chambers only exists in MC 1.21+
+    finder_120 = Finder(MC_1_20_6)
+    assert finder_120.get_structure_config(Trial_Chambers) is None
+    assert finder_old.get_structure_config(Trial_Chambers) is not None
+    assert finder_120.is_viable_feature_biome(Trial_Chambers, plains) is False
+    assert finder_old.is_viable_feature_biome(Trial_Chambers, plains) is True
+
+def test_new_constants():
+    from pybiomes.structures import Abandoned_Camp, Nether_Fossil, Stronghold
+    from pybiomes.biomes import sulfur_caves, dappled_forest
+
+    assert isinstance(Abandoned_Camp, int)
+    assert isinstance(Nether_Fossil, int)
+    assert isinstance(Stronghold, int)
+    assert isinstance(sulfur_caves, int)
+    assert isinstance(dappled_forest, int)
+
