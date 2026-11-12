@@ -1,20 +1,7 @@
-# pyproject.toml
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pybiomes"  # as it would appear on PyPI
+name = "pybiomes"
 version = "0.0.1"
-
-[tool.setuptools]
-ext-modules = [
-  {name = "pybiomes", sources = [            "src/bind.c", 
-            "src/external/cubiomes/generator.c", 
-            "src/external/cubiomes/layers.c", 
-            "src/external/cubiomes/noise.c",
-            "src/external/cubiomes/biomes.c",
-            "src/external/cubiomes/util.c",
-            "src/external/cubiomes/finders.c",
-            "src/external/cubiomes/quadbase.c", "src/external/cubiomes/biomenoise.c"], extra-compile-args = ["-O3"]}
-]

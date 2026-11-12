@@ -197,7 +197,7 @@ static PyMethodDef Generator_methods[] = {
     {NULL}  /* Sentinel */
 };
 
-static PyTypeObject GeneratorType = {
+PyTypeObject GeneratorType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "pybiomes.Generator",
     .tp_doc = "Generator objects",

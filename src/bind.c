@@ -81,9 +81,11 @@ PyMODINIT_FUNC PyInit_pybiomes(void){
 
     Py_INCREF(versions);
     PyDict_SetItemString(moduleDict, "pybiomes.versions", versions);
+    PyModule_AddObject(base, "versions", versions);
 
     Py_INCREF(dimensions);
     PyDict_SetItemString(moduleDict, "pybiomes.dimensions", dimensions);
+    PyModule_AddObject(base, "dimensions", dimensions);
 
     Py_INCREF(structures);
     PyDict_SetItemString(moduleDict, "pybiomes.structures", structures);
