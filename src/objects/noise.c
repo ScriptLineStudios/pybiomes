@@ -30,7 +30,6 @@ static int PerlinNoise_init(PerlinNoiseObject *self, PyObject *args, PyObject *k
 }
 
 static void PerlinNoise_dealloc(PerlinNoiseObject *self) {
-    PyObject_GC_UnTrack(self);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -76,7 +75,6 @@ static int OctaveNoise_init(OctaveNoiseObject *self, PyObject *args, PyObject *k
 }
 
 static void OctaveNoise_dealloc(OctaveNoiseObject *self) {
-    PyObject_GC_UnTrack(self);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -119,7 +117,6 @@ static int DoublePerlinNoise_init(DoublePerlinNoiseObject *self, PyObject *args,
 }
 
 static void DoublePerlinNoise_dealloc(DoublePerlinNoiseObject *self) {
-    PyObject_GC_UnTrack(self);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 

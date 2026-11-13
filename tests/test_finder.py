@@ -182,3 +182,82 @@ def test_new_constants():
     assert isinstance(sulfur_caves, int)
     assert isinstance(dappled_forest, int)
 
+def test_get_structure_salt_config(finder):
+    from pybiomes.structures import Ruined_Portal
+    from pybiomes.versions import MC_1_12_2
+
+    dp_cfg = finder.get_structure_salt_config(Desert_Pyramid, desert)
+    assert isinstance(dp_cfg, dict)
+    assert dp_cfg['generationStep'] == 4
+    assert dp_cfg['decoratorIndex'] == 1
+
+    rp_cfg = finder.get_structure_salt_config(Ruined_Portal, plains)
+    assert isinstance(rp_cfg, dict)
+    assert rp_cfg['generationStep'] == 4
+    assert rp_cfg['decoratorIndex'] == 10
+
+    finder_old = Finder(MC_1_12_2)
+    assert finder_old.get_structure_salt_config(Desert_Pyramid, desert) is None
+
+def test_get_fixed_end_gateways(finder):
+    from pybiomes.versions import MC_1_8_9
+    seed = 1234567890
+    gateways = finder.get_fixed_end_gateways(seed)
+    assert isinstance(gateways, list)
+    assert len(gateways) == 20
+    assert isinstance(gateways[0], Pos)
+    assert gateways[0].x == 56 and gateways[0].z == -78
+    assert gateways[1].x == -30 and gateways[1].z == 91
+    assert gateways[2].x == 91 and gateways[2].z == -30
+
+    finder_old = Finder(MC_1_8_9)
+    assert finder_old.get_fixed_end_gateways(seed) is None
+
+def test_get_linked_gateway_pos(finder):
+    from pybiomes.dimensions import DIM_END
+    from pybiomes.versions import MC_1_8_9
+    seed = 1234567890
+    generator = Generator(MC_1_21_WD, 0)
+    generator.apply_seed(seed, DIM_END)
+
+    dst = finder.get_linked_gateway_pos(generator, 56, -78)
+    assert isinstance(dst, Pos)
+    assert dst.x == 684 and dst.z == -916
+
+    dst_pos = finder.get_linked_gateway_pos(generator, Pos(x=56, z=-78))
+    assert isinstance(dst_pos, Pos)
+    assert dst_pos.x == 684 and dst_pos.z == -916
+
+    finder_old = Finder(MC_1_8_9)
+    assert finder_old.get_linked_gateway_pos(generator, 56, -78) is None
+
+def test_is_end_chunk_empty(finder):
+    from pybiomes.dimensions import DIM_END
+    from pybiomes.versions import MC_1_8_9
+    seed = 1234567890
+    generator = Generator(MC_1_21_WD, 0)
+    generator.apply_seed(seed, DIM_END)
+
+    assert finder.is_end_chunk_empty(generator, 0, 0) is False
+    assert finder.is_end_chunk_empty(generator, 20, 20) is True
+    assert finder.is_end_chunk_empty(generator, 100, 100) is False
+
+    finder_old = Finder(MC_1_8_9)
+    assert finder_old.is_end_chunk_empty(generator, 0, 0) is None
+
+def test_get_end_islands(finder):
+    from pybiomes.versions import MC_1_8_9
+    seed = 1234567890
+
+    empty_islands = finder.get_end_islands(seed, 0, 0)
+    assert isinstance(empty_islands, list)
+    assert len(empty_islands) == 0
+
+    islands = finder.get_end_islands(seed, 50, 53)
+    assert isinstance(islands, list)
+    assert len(islands) == 1
+    assert islands[0]['x'] == 807 and islands[0]['z'] == 862 and islands[0]['r'] == 6
+
+    finder_old = Finder(MC_1_8_9)
+    assert finder_old.get_end_islands(seed, 50, 53) is None
+

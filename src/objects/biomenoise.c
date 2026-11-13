@@ -31,7 +31,6 @@ static int SurfaceNoise_init(SurfaceNoiseObject *self, PyObject *args, PyObject 
 }
 
 static void SurfaceNoise_dealloc(SurfaceNoiseObject *self) {
-    PyObject_GC_UnTrack(self);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 

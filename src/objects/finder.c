@@ -98,6 +98,29 @@ static PyObject *Finder_get_structure_config(FinderObject *self, PyObject *args)
 	
 }
 
+static PyObject *Finder_get_structure_salt_config(FinderObject *self, PyObject *args) {
+    int structureType, biomeID;
+
+    if (!PyArg_ParseTuple(args, "ii", &structureType, &biomeID)) {
+        return NULL;
+    }
+
+    StructureSaltConfig ssc;
+    if (!getStructureSaltConfig(structureType, self->version, biomeID, &ssc)) {
+        Py_RETURN_NONE;
+    }
+
+    PyObject *dict = PyDict_New();
+    if (!dict) {
+        return PyErr_NoMemory();
+    }
+
+    PyDict_SetItemString(dict, "generationStep", PyLong_FromLong(ssc.generationStep));
+    PyDict_SetItemString(dict, "decoratorIndex", PyLong_FromLong(ssc.decoratorIndex));
+
+    return dict;
+}
+
 static PyObject *Finder_is_stronghold_biome(FinderObject *self, PyObject *args) {
 	int id;
 
@@ -395,6 +418,149 @@ static PyObject *Finder_get_variant(FinderObject *self, PyObject *args) {
     return dict;
 }
 
+static PyObject *Finder_get_fixed_end_gateways(FinderObject *self, PyObject *args) {
+    uint64_t seed;
+
+    if (!PyArg_ParseTuple(args, "K", &seed)) {
+        return NULL;
+    }
+
+    if (self->version < MC_1_9) {
+        Py_RETURN_NONE;
+    }
+
+    Pos gateways[20];
+    getFixedEndGateways(self->version, seed, gateways);
+
+    PyObject *list = PyList_New(20);
+    if (!list) {
+        return PyErr_NoMemory();
+    }
+
+    for (int i = 0; i < 20; i++) {
+        PosObject *p = Pos_new(&PosType, NULL, NULL);
+        if (!p) {
+            Py_DECREF(list);
+            return NULL;
+        }
+        p->pos.x = gateways[i].x;
+        p->pos.z = gateways[i].z;
+        PyList_SetItem(list, i, (PyObject *)p);
+    }
+
+    return list;
+}
+
+static PyObject *Finder_get_linked_gateway_pos(FinderObject *self, PyObject *args) {
+    PyObject *gen_obj;
+    PyObject *arg2;
+    int src_x, src_z;
+    PyObject *sn_obj = NULL;
+
+    if (PyArg_ParseTuple(args, "O!ii|O", &GeneratorType, &gen_obj, &src_x, &src_z, &sn_obj)) {
+        // (generator, src_x, src_z, [surface_noise])
+    } else {
+        PyErr_Clear();
+        if (PyArg_ParseTuple(args, "O!O!|O", &GeneratorType, &gen_obj, &PosType, &arg2, &sn_obj)) {
+            PosObject *pos = (PosObject *)arg2;
+            src_x = pos->pos.x;
+            src_z = pos->pos.z;
+        } else {
+            return NULL;
+        }
+    }
+
+    if (self->version < MC_1_9) {
+        Py_RETURN_NONE;
+    }
+
+    GeneratorObject *gen = (GeneratorObject *)gen_obj;
+    SurfaceNoise sn_storage;
+    SurfaceNoise *sn = NULL;
+
+    if (sn_obj && sn_obj != Py_None) {
+        if (!PyObject_TypeCheck(sn_obj, &SurfaceNoiseType)) {
+            PyErr_SetString(PyExc_TypeError, "Parameter must be a SurfaceNoise object");
+            return NULL;
+        }
+        sn = &((SurfaceNoiseObject *)sn_obj)->noise;
+    } else {
+        initSurfaceNoise(&sn_storage, DIM_END, gen->generator.seed);
+        sn = &sn_storage;
+    }
+
+    Pos src = {src_x, src_z};
+    Pos dst = getLinkedGatewayPos(&gen->generator.en, sn, gen->generator.seed, src);
+
+    PosObject *ret = Pos_new(&PosType, NULL, NULL);
+    ret->pos.x = dst.x;
+    ret->pos.z = dst.z;
+    return (PyObject *)ret;
+}
+
+static PyObject *Finder_is_end_chunk_empty(FinderObject *self, PyObject *args) {
+    PyObject *gen_obj;
+    int chunkX, chunkZ;
+    PyObject *sn_obj = NULL;
+
+    if (!PyArg_ParseTuple(args, "O!ii|O", &GeneratorType, &gen_obj, &chunkX, &chunkZ, &sn_obj)) {
+        return NULL;
+    }
+
+    if (self->version < MC_1_9) {
+        Py_RETURN_NONE;
+    }
+
+    GeneratorObject *gen = (GeneratorObject *)gen_obj;
+    SurfaceNoise sn_storage;
+    SurfaceNoise *sn = NULL;
+
+    if (sn_obj && sn_obj != Py_None) {
+        if (!PyObject_TypeCheck(sn_obj, &SurfaceNoiseType)) {
+            PyErr_SetString(PyExc_TypeError, "Parameter must be a SurfaceNoise object");
+            return NULL;
+        }
+        sn = &((SurfaceNoiseObject *)sn_obj)->noise;
+    } else {
+        initSurfaceNoise(&sn_storage, DIM_END, gen->generator.seed);
+        sn = &sn_storage;
+    }
+
+    int empty = isEndChunkEmpty(&gen->generator.en, sn, gen->generator.seed, chunkX, chunkZ);
+    return PyBool_FromLong(empty);
+}
+
+static PyObject *Finder_get_end_islands(FinderObject *self, PyObject *args) {
+    uint64_t seed;
+    int chunkX, chunkZ;
+
+    if (!PyArg_ParseTuple(args, "Kii", &seed, &chunkX, &chunkZ)) {
+        return NULL;
+    }
+
+    if (self->version < MC_1_9) {
+        Py_RETURN_NONE;
+    }
+
+    EndIsland islands[2];
+    int count = getEndIslands(islands, self->version, seed, chunkX, chunkZ);
+
+    PyObject *list = PyList_New(count);
+    if (!list) {
+        return PyErr_NoMemory();
+    }
+
+    for (int i = 0; i < count; i++) {
+        PyObject *dict = PyDict_New();
+        PyDict_SetItemString(dict, "x", PyLong_FromLong(islands[i].x));
+        PyDict_SetItemString(dict, "z", PyLong_FromLong(islands[i].z));
+        PyDict_SetItemString(dict, "r", PyLong_FromLong(islands[i].r));
+        PyList_SetItem(list, i, dict);
+    }
+
+    return list;
+}
+
 static PyMemberDef Finder_members[] = {
     {NULL}  /* Sentinel */
 };
@@ -403,6 +569,7 @@ static PyMethodDef Finder_methods[] = {
     {"set_attempt_seed", (PyCFunction)Finder_set_attempt_seed, METH_VARARGS, "Sets an attempt seed from a population seed and coordinates"},
     {"get_population_seed", (PyCFunction)Finder_get_population_seed, METH_VARARGS, "Generates a population seed from a world seed and coordinates."},
     {"get_structure_config", (PyCFunction)Finder_get_structure_config, METH_VARARGS, "Finds a structure's configuration parameters"},
+    {"get_structure_salt_config", (PyCFunction)Finder_get_structure_salt_config, METH_VARARGS, "Gets structure generation step and decorator index"},
     {"is_stronghold_biome", (PyCFunction)Finder_is_stronghold_biome, METH_VARARGS, "Checks if the biome is valid for stronghold placement"},
     {"is_viable_feature_biome", (PyCFunction)Finder_is_viable_feature_biome, METH_VARARGS, "Checks if the biome is valid for feature placement"},
     {"init_first_stronghold", (PyCFunction)Finder_init_first_stronghold, METH_VARARGS, "Initialises first stronghold"},
@@ -413,6 +580,10 @@ static PyMethodDef Finder_methods[] = {
     {"is_slime_chunk", (PyCFunction)Finder_is_slime_chunk, METH_VARARGS, "Checks if a chunk is a slime chunk"},
     {"get_structure_pos", (PyCFunction)Finder_get_structure_pos, METH_VARARGS, "Finds a structures position within the given region"},
 	{"get_variant", (PyCFunction)Finder_get_variant, METH_VARARGS, "Gets a structures variant data (rotation, bounding box, etc.)"},
+    {"get_fixed_end_gateways", (PyCFunction)Finder_get_fixed_end_gateways, METH_VARARGS, "Generates positions of the 20 central End return gateways"},
+    {"get_linked_gateway_pos", (PyCFunction)Finder_get_linked_gateway_pos, METH_VARARGS, "Calculates teleportation destination from an End gateway"},
+    {"is_end_chunk_empty", (PyCFunction)Finder_is_end_chunk_empty, METH_VARARGS, "Tests if an End chunk is empty void"},
+    {"get_end_islands", (PyCFunction)Finder_get_end_islands, METH_VARARGS, "Gets small End island features in a chunk"},
     {NULL}  /* Sentinel */
 };
 

@@ -158,6 +158,36 @@ static PyObject *Generator_is_viable_structure_terrain(GeneratorObject *self, Py
     return PyBool_FromLong(ret);
 }
 
+static PyObject *Generator_sample_biome_noise(GeneratorObject *self, PyObject *args) {
+    int x, y, z;
+
+    if (!PyArg_ParseTuple(args, "iii", &x, &y, &z)) {
+        return NULL;
+    }
+
+    if (self->generator.mc < MC_1_18) {
+        Py_RETURN_NONE;
+    }
+
+    int64_t np[6];
+    int biome = sampleBiomeNoise(&self->generator.bn, np, x, y, z, NULL, 0);
+
+    PyObject *dict = PyDict_New();
+    if (!dict) {
+        return PyErr_NoMemory();
+    }
+
+    PyDict_SetItemString(dict, "temperature", PyFloat_FromDouble(np[0] / 10000.0));
+    PyDict_SetItemString(dict, "humidity", PyFloat_FromDouble(np[1] / 10000.0));
+    PyDict_SetItemString(dict, "continentalness", PyFloat_FromDouble(np[2] / 10000.0));
+    PyDict_SetItemString(dict, "erosion", PyFloat_FromDouble(np[3] / 10000.0));
+    PyDict_SetItemString(dict, "depth", PyFloat_FromDouble(np[4] / 10000.0));
+    PyDict_SetItemString(dict, "weirdness", PyFloat_FromDouble(np[5] / 10000.0));
+    PyDict_SetItemString(dict, "biome", PyLong_FromLong(biome));
+
+    return dict;
+}
+
 static PyObject *Generator_map_approx_height(GeneratorObject *self, PyObject *args) {
     PyObject *sn_obj;
     int x, z, w, h;
@@ -206,6 +236,7 @@ static PyMethodDef Generator_methods[] = {
     {"gen_biomes", (PyCFunction) Generator_gen_biomes, METH_VARARGS, "Get the biome at the specified location"},
     {"is_viable_structure_pos", (PyCFunction) Generator_is_viable_structure_pos, METH_VARARGS, "Get the biome at the specified location"},
     {"is_viable_structure_terrain", (PyCFunction) Generator_is_viable_structure_terrain, METH_VARARGS, "Checks if the terrain at the position is viable for the structure"},
+    {"sample_biome_noise", (PyCFunction) Generator_sample_biome_noise, METH_VARARGS, "Samples the 6 climate noise parameters and biome at the specified location"},
     {"map_approx_height", (PyCFunction)Generator_map_approx_height, METH_VARARGS, "Maps an approximation of the Overworld surface height."},
     {NULL}  /* Sentinel */
 };
