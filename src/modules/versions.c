@@ -34,7 +34,15 @@ PyMODINIT_FUNC PyInit_versions(PyModuleDef *pybiomes) {
     PyModule_AddIntMacro(mod, MC_1_21_1);
     PyModule_AddIntMacro(mod, MC_1_21_3);
     PyModule_AddIntMacro(mod, MC_1_21_WD);
+    PyModule_AddIntMacro(mod, MC_1_21_4);
+    PyModule_AddIntMacro(mod, MC_1_21_5);
+    PyModule_AddIntMacro(mod, MC_1_21_6);
+    PyModule_AddIntMacro(mod, MC_1_21_9);
+    PyModule_AddIntMacro(mod, MC_1_21_11);
     PyModule_AddIntMacro(mod, MC_1_21);
+    PyModule_AddIntMacro(mod, MC_26_1);
+    PyModule_AddIntMacro(mod, MC_26_2);
+    PyModule_AddIntMacro(mod, MC_26_3);
     PyModule_AddIntMacro(mod, MC_NEWEST);
 
     return mod;

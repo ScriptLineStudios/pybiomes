@@ -28,6 +28,9 @@ PyMODINIT_FUNC PyInit_structures(PyModuleDef *pybiomes) {
     PyModule_AddIntMacro(mod, End_Island);
     PyModule_AddIntMacro(mod, Trail_Ruins);
     PyModule_AddIntMacro(mod, Trial_Chambers);
+    PyModule_AddIntMacro(mod, Abandoned_Camp);
+    PyModule_AddIntMacro(mod, Nether_Fossil);
+    PyModule_AddIntMacro(mod, Stronghold);
 
     return mod;
 }

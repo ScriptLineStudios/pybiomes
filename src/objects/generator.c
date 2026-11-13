@@ -5,12 +5,21 @@
 #include <Python.h>
 #include "structmember.h"
 
+#include "../external/cubiomes/biomenoise.h"
+#include "../external/cubiomes/finders.h"
 #include "../external/cubiomes/generator.h"
+
+extern PyTypeObject SurfaceNoiseType;
+
 
 typedef struct {
     PyObject_HEAD
     Generator generator;
 } GeneratorObject;
+
+extern PyTypeObject GeneratorType;
+
+#define GENERATOR_OBJECT_TYPE "O!"
 
 static int Generator_traverse(GeneratorObject *self, visitproc visit, void *arg) {
     return 0;
@@ -81,29 +90,48 @@ static PyObject *Generator_get_biome_at(GeneratorObject *self, PyObject *args) {
 }
 
 static PyObject *Generator_gen_biomes(GeneratorObject *self, PyObject *args) {
-    PyObject *range;
-
-    if (!PyArg_ParseTuple(args, "O", &range)) {
+    int x, y, z, sx, sy, sz, scale;
+    
+    // The C function is now configured to expect seven integers.
+    if (!PyArg_ParseTuple(args, "iiiiiii", &x, &y, &z, &sx, &sy, &sz, &scale)) {
         return NULL;
     }
 
-    RangeObject *range_cast = (RangeObject *)range;
-
-    Range r = range_cast->range;
+    Range r;
+    r.scale = scale;
+    r.x = x;
+    r.y = y;
+    r.z = z;
+    r.sx = sx;
+    r.sy = sy;
+    r.sz = sz;
 
     int *biomeIds = allocCache(&self->generator, r);
+    if (!biomeIds) {
+        PyErr_SetString(PyExc_MemoryError, "Failed to allocate memory for biome cache.");
+        return NULL;
+    }
+
     genBiomes(&self->generator, biomeIds, r);
 
     size_t len = getMinCacheSize(&self->generator, r.scale, r.sx, r.sy, r.sz);
-
     PyObject *list = PyList_New(len);
-
-    for (size_t i = 0; i < len; i++) {
-        PyList_SetItem(list, i, PyLong_FromLong(biomeIds[i]));
+    if (!list) {
+        free(biomeIds);
+        return NULL;
     }
 
+    for (size_t i = 0; i < len; i++) {
+        PyObject *biome_py_obj = PyLong_FromLong(biomeIds[i]);
+        if (!biome_py_obj) {
+            Py_DECREF(list);
+            free(biomeIds);
+            return NULL;
+        }
+        PyList_SetItem(list, i, biome_py_obj);
+    }
+    
     free(biomeIds);
-
     return list;
 }
 
@@ -119,15 +147,70 @@ static PyObject *Generator_is_viable_structure_pos(GeneratorObject *self, PyObje
     return PyBool_FromLong(ret);
 }
 
+static PyObject *Generator_is_viable_structure_terrain(GeneratorObject *self, PyObject *args) {
+    int structure, x, z;
+
+    if (!PyArg_ParseTuple(args, "iii", &structure, &x, &z)) {
+        return NULL;
+    }
+
+    int ret = isViableStructureTerrain(structure, &self->generator, x, z);
+    return PyBool_FromLong(ret);
+}
+
+static PyObject *Generator_map_approx_height(GeneratorObject *self, PyObject *args) {
+    PyObject *sn_obj;
+    int x, z, w, h;
+    
+    if (!PyArg_ParseTuple(args, "O!iiii", &SurfaceNoiseType, &sn_obj, &x, &z, &w, &h)) {
+        return NULL;
+    }
+    
+    SurfaceNoiseObject *sn = (SurfaceNoiseObject *)sn_obj;
+
+    float *y = (float *)malloc(w * h * sizeof(float));
+    int *ids = (int *)malloc(w * h * sizeof(int));
+    
+    if (!y || !ids) {
+        PyErr_SetString(PyExc_MemoryError, "Failed to allocate memory.");
+        free(y);
+        free(ids);
+        return NULL;
+    }
+	
+    int result = mapApproxHeight(y, ids, &self->generator, &sn->noise, x, z, w, h);
+
+    if (result != 0) {
+        PyErr_SetString(PyExc_RuntimeError, "mapApproxHeight returned a non-zero value, indicating an error.");
+        free(y);
+        free(ids);
+        return NULL;
+    }
+    PyObject *y_list = PyList_New(w * h);
+    PyObject *ids_list = PyList_New(w * h);
+    
+    for (int i = 0; i < w * h; i++) {
+        PyList_SetItem(y_list, i, PyFloat_FromDouble(y[i]));
+        PyList_SetItem(ids_list, i, PyLong_FromLong(ids[i]));
+    }
+    
+    free(y);
+    free(ids);
+    
+    return PyTuple_Pack(2, y_list, ids_list);
+}
+
 static PyMethodDef Generator_methods[] = {
     {"apply_seed", (PyCFunction) Generator_apply_seed, METH_VARARGS, "Applies a seed to the generator"},
     {"get_biome_at", (PyCFunction) Generator_get_biome_at, METH_VARARGS, "Get the biome at the specified location"},
     {"gen_biomes", (PyCFunction) Generator_gen_biomes, METH_VARARGS, "Get the biome at the specified location"},
     {"is_viable_structure_pos", (PyCFunction) Generator_is_viable_structure_pos, METH_VARARGS, "Get the biome at the specified location"},
+    {"is_viable_structure_terrain", (PyCFunction) Generator_is_viable_structure_terrain, METH_VARARGS, "Checks if the terrain at the position is viable for the structure"},
+    {"map_approx_height", (PyCFunction)Generator_map_approx_height, METH_VARARGS, "Maps an approximation of the Overworld surface height."},
     {NULL}  /* Sentinel */
 };
 
-static PyTypeObject GeneratorType = {
+PyTypeObject GeneratorType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "pybiomes.Generator",
     .tp_doc = "Generator objects",

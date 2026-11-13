@@ -6,6 +6,8 @@
 #include "pybiomes.c"
 
 #include "objects/range.c"
+#include "objects/noise.c"
+#include "objects/biomenoise.c"
 #include "objects/generator.c"
 #include "objects/position.c"
 #include "objects/finder.c"
@@ -48,6 +50,25 @@ PyMODINIT_FUNC PyInit_pybiomes(void){
     if (PyType_Ready(&RngType) < 0) {
         return NULL;
     }
+
+    if (PyType_Ready(&XoroshiroType) < 0) {
+        return NULL;
+    }
+    // Noise module objects
+    if (PyType_Ready(&PerlinNoiseType) < 0) {
+        return NULL;
+    }
+    if (PyType_Ready(&OctaveNoiseType) < 0) {
+        return NULL;
+    }
+    if (PyType_Ready(&DoublePerlinNoiseType) < 0) {
+        return NULL;
+    }
+
+    // Biome noise module objects
+    if (PyType_Ready(&SurfaceNoiseType) < 0) {
+        return NULL;
+    }
     
     PyObject *base = PyModule_Create(&pybiomes);
 
@@ -60,9 +81,11 @@ PyMODINIT_FUNC PyInit_pybiomes(void){
 
     Py_INCREF(versions);
     PyDict_SetItemString(moduleDict, "pybiomes.versions", versions);
+    PyModule_AddObject(base, "versions", versions);
 
     Py_INCREF(dimensions);
     PyDict_SetItemString(moduleDict, "pybiomes.dimensions", dimensions);
+    PyModule_AddObject(base, "dimensions", dimensions);
 
     Py_INCREF(structures);
     PyDict_SetItemString(moduleDict, "pybiomes.structures", structures);
@@ -86,6 +109,21 @@ PyMODINIT_FUNC PyInit_pybiomes(void){
 	
     Py_INCREF(&RngType);
     PyModule_AddObject(base, "Rng", (PyObject *)&RngType);
+	
+    Py_INCREF(&XoroshiroType);
+    PyModule_AddObject(base, "Xoroshiro", (PyObject *)&XoroshiroType);
+	
+    Py_INCREF(&PerlinNoiseType);
+    PyModule_AddObject(base, "PerlinNoise", (PyObject *)&PerlinNoiseType);
+    
+    Py_INCREF(&OctaveNoiseType);
+    PyModule_AddObject(base, "OctaveNoise", (PyObject *)&OctaveNoiseType);
+    
+    Py_INCREF(&DoublePerlinNoiseType);
+    PyModule_AddObject(base, "DoublePerlinNoise", (PyObject *)&DoublePerlinNoiseType);
+    
+    Py_INCREF(&SurfaceNoiseType);
+    PyModule_AddObject(base, "SurfaceNoise", (PyObject *)&SurfaceNoiseType);
 
     return base; 
 }
