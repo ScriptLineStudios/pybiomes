@@ -1,5 +1,5 @@
 import pytest
-from pybiomes import Finder, Generator, Pos
+from pybiomes import Finder, Generator, Pos, Pos3
 from pybiomes.biomes import plains, desert
 from pybiomes.structures import Village, Desert_Pyramid
 from pybiomes.versions import MC_1_21_WD
@@ -63,7 +63,7 @@ def test_get_spawn(finder):
     seed = 1234567890
     generator = Generator(MC_1_21_WD, seed)
     spawn_pos = finder.get_spawn(generator)
-    
+
     assert isinstance(spawn_pos, Pos)
     assert spawn_pos.x == 8
     assert spawn_pos.z == 8
@@ -260,4 +260,154 @@ def test_get_end_islands(finder):
 
     finder_old = Finder(MC_1_8_9)
     assert finder_old.get_end_islands(seed, 50, 53) is None
+
+def test_pos3():
+    p = Pos3(10, 20, 30)
+    assert isinstance(p, Pos3)
+    assert p.x == 10 and p.y == 20 and p.z == 30
+    assert repr(p) == "Pos3(x=10, y=20, z=30)"
+    p.x = 40
+    p.y = 50
+    p.z = 60
+    assert p.x == 40 and p.y == 50 and p.z == 60
+    assert repr(p) == "Pos3(x=40, y=50, z=60)"
+    assert repr(Pos(1, 2)) == "Pos(x=1, z=2)"
+
+def test_pieces_constants():
+    from pybiomes import pieces
+    assert pieces.SH_STAIRS_DOWN == 6
+    assert pieces.SH_FIVE_CROSSING == 7
+    assert pieces.FORTRESS_START == 0
+    assert pieces.MS_ROOM == 2
+    assert pieces.BASE_FLOOR == 0
+    assert pieces.END_SHIP == 12
+
+def test_get_stronghold_pieces(finder):
+    from pybiomes.pieces import SH_STAIRS_DOWN, SH_FIVE_CROSSING
+    from pybiomes.versions import MC_B1_7
+    seed = 1234567890
+
+    pieces = finder.get_stronghold_pieces(seed, -33, -163)
+    assert isinstance(pieces, list)
+    assert len(pieces) == 150
+
+    p0 = pieces[0]
+    assert p0['name'] == 'SHSD'
+    assert isinstance(p0['pos'], Pos3)
+    assert p0['pos'].x == -526 and p0['pos'].y == 64 and p0['pos'].z == -2606
+    assert p0['bb0'].x == -526 and p0['bb0'].y == 64 and p0['bb0'].z == -2606
+    assert p0['bb1'].x == -522 and p0['bb1'].y == 74 and p0['bb1'].z == -2602
+    assert p0['rot'] == 1
+    assert p0['depth'] == 0
+    assert p0['type'] == SH_STAIRS_DOWN
+    assert isinstance(p0['chests'], list)
+
+    p1 = pieces[1]
+    assert p1['name'] == 'SH5C'
+    assert p1['pos'].x == -521 and p1['pos'].y == 65 and p1['pos'].z == -2605
+    assert p1['type'] == SH_FIVE_CROSSING
+    assert p1['rot'] == 1
+    assert p1['depth'] == 1
+
+    finder_b17 = Finder(MC_B1_7)
+    assert finder_b17.get_stronghold_pieces(seed, -33, -163) is None
+
+def test_get_fortress_pieces(finder):
+    from pybiomes.pieces import FORTRESS_START
+    from pybiomes.versions import MC_B1_8
+    seed = 1234567890
+
+    pieces = finder.get_fortress_pieces(seed, 10, 0)
+    assert isinstance(pieces, list)
+    assert len(pieces) == 58
+
+    p0 = pieces[0]
+    assert p0['name'] == 'NeStart'
+    assert isinstance(p0['pos'], Pos3)
+    assert p0['pos'].x == 162 and p0['pos'].y == 64 and p0['pos'].z == 2
+    assert p0['type'] == FORTRESS_START
+    assert p0['rot'] == 2
+    assert p0['depth'] == 0
+
+    finder_b18 = Finder(MC_B1_8)
+    assert finder_b18.get_fortress_pieces(seed, 10, 0) is None
+
+def test_get_mineshaft_pieces(finder):
+    from pybiomes.pieces import MS_ROOM
+    from pybiomes.versions import MC_B1_7
+    seed = 1234567890
+
+    pieces = finder.get_mineshaft_pieces(seed, 0, 0)
+    assert isinstance(pieces, list)
+    assert len(pieces) == 166
+
+    p0 = pieces[0]
+    assert p0['name'] == 'MSRoom'
+    assert isinstance(p0['pos'], Pos3)
+    assert p0['pos'].x == 2 and p0['pos'].y == 50 and p0['pos'].z == 2
+    assert p0['type'] == MS_ROOM
+    assert p0['rot'] == 0
+    assert p0['depth'] == 0
+
+    finder_b17 = Finder(MC_B1_7)
+    assert finder_b17.get_mineshaft_pieces(seed, 0, 0) is None
+
+def test_get_end_city_pieces(finder):
+    from pybiomes.pieces import BASE_FLOOR
+    from pybiomes.versions import MC_1_8_9
+    seed = 1234567890
+
+    pieces = finder.get_end_city_pieces(seed, 0, 64)
+    assert isinstance(pieces, list)
+    assert len(pieces) == 53
+
+    p0 = pieces[0]
+    assert p0['name'] == 'base_floor'
+    assert isinstance(p0['pos'], Pos3)
+    assert p0['pos'].x == 8 and p0['pos'].y == 0 and p0['pos'].z == 1032
+    assert p0['type'] == BASE_FLOOR
+    assert p0['rot'] == 2
+    assert p0['depth'] == 0
+
+    finder_189 = Finder(MC_1_8_9)
+    assert finder_189.get_end_city_pieces(seed, 0, 64) is None
+
+def test_get_structure_pieces(finder):
+    from pybiomes.structures import Desert_Pyramid, Abandoned_Camp
+    from pybiomes.versions import MC_1_21_1
+    seed = 1234567890
+
+    pieces = finder.get_structure_pieces(Desert_Pyramid, seed, 48, 256)
+    assert isinstance(pieces, list)
+    assert len(pieces) == 1
+
+    p0 = pieces[0]
+    assert p0['name'] == 'TeDP'
+    assert isinstance(p0['pos'], Pos3)
+    assert p0['pos'].x == 48 and p0['pos'].y == 64 and p0['pos'].z == 256
+    assert len(p0['chests']) == 4
+
+    c0 = p0['chests'][0]
+    assert isinstance(c0['pos'], Pos)
+    assert c0['pos'].x == 56 and c0['pos'].z == 266
+    assert c0['loot_table'] == 'chests/desert_pyramid'
+    assert c0['loot_seed'] == 8141200536726219838
+
+    c1 = p0['chests'][1]
+    assert c1['pos'].x == 58 and c1['pos'].z == 264
+    assert c1['loot_table'] == 'chests/desert_pyramid'
+    assert c1['loot_seed'] == 16206976313380118234
+
+    c2 = p0['chests'][2]
+    assert c2['pos'].x == 58 and c2['pos'].z == 268
+    assert c2['loot_table'] == 'chests/desert_pyramid'
+    assert c2['loot_seed'] == 2745609353213752681
+
+    c3 = p0['chests'][3]
+    assert c3['pos'].x == 60 and c3['pos'].z == 266
+    assert c3['loot_table'] == 'chests/desert_pyramid'
+    assert c3['loot_seed'] == 6495448500917364276
+
+    finder_old = Finder(MC_1_21_1)
+    assert finder_old.get_structure_pieces(Abandoned_Camp, seed, 0, 0) is None
 
