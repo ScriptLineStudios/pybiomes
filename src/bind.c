@@ -17,6 +17,7 @@
 #include "modules/dimensions.c"
 #include "modules/biomes.c"
 #include "modules/structures.c"
+#include "modules/pieces.c"
 
 static PyMethodDef base_methods[] = {
     {NULL, NULL, 0, NULL}
@@ -44,6 +45,10 @@ PyMODINIT_FUNC PyInit_pybiomes(void){
     }
 
     if (PyType_Ready(&PosType) < 0) {
+        return NULL;
+    }
+
+    if (PyType_Ready(&Pos3Type) < 0) {
         return NULL;
     }
 
@@ -76,6 +81,7 @@ PyMODINIT_FUNC PyInit_pybiomes(void){
     PyObject *dimensions = PyInit_dimensions(&pybiomes);
     PyObject *biomes = PyInit_biomes(&pybiomes);
     PyObject *structures = PyInit_structures(&pybiomes);
+    PyObject *pieces = PyInit_pieces(&pybiomes);
 
     PyObject *moduleDict = PyImport_GetModuleDict();
 
@@ -90,6 +96,10 @@ PyMODINIT_FUNC PyInit_pybiomes(void){
     Py_INCREF(structures);
     PyDict_SetItemString(moduleDict, "pybiomes.structures", structures);
     PyModule_AddObject(base, "structures", structures);
+
+    Py_INCREF(pieces);
+    PyDict_SetItemString(moduleDict, "pybiomes.pieces", pieces);
+    PyModule_AddObject(base, "pieces", pieces);
 
     Py_INCREF(biomes);
     PyDict_SetItemString(moduleDict, "pybiomes.biomes", biomes);
@@ -106,6 +116,9 @@ PyMODINIT_FUNC PyInit_pybiomes(void){
 
     Py_INCREF(&PosType);
     PyModule_AddObject(base, "Pos", (PyObject *)&PosType);
+
+    Py_INCREF(&Pos3Type);
+    PyModule_AddObject(base, "Pos3", (PyObject *)&Pos3Type);
 	
     Py_INCREF(&RngType);
     PyModule_AddObject(base, "Rng", (PyObject *)&RngType);

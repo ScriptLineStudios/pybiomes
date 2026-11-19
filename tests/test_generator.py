@@ -99,3 +99,23 @@ def test_is_viable_structure_terrain(generator):
     generator.apply_seed(seed, DIM_OVERWORLD)
     is_valid = generator.is_viable_structure_terrain(Desert_Pyramid, 288, 1984)
     assert isinstance(is_valid, bool)
+
+def test_sample_biome_noise(generator):
+    from pybiomes.biomes import jungle
+    from pybiomes.versions import MC_1_17_1
+    seed = 1234567890
+    generator.apply_seed(seed, DIM_OVERWORLD)
+
+    noise = generator.sample_biome_noise(0, 64, 0)
+    assert isinstance(noise, dict)
+    assert pytest.approx(noise['temperature'], 0.0001) == 0.2664
+    assert pytest.approx(noise['humidity'], 0.0001) == 0.3361
+    assert pytest.approx(noise['continentalness'], 0.0001) == -0.0503
+    assert pytest.approx(noise['erosion'], 0.0001) == 0.2295
+    assert pytest.approx(noise['depth'], 0.0001) == -1.4908
+    assert pytest.approx(noise['weirdness'], 0.0001) == -0.3730
+    assert noise['biome'] == jungle
+
+    gen_old = Generator(version=MC_1_17_1, flags=0)
+    gen_old.apply_seed(seed, DIM_OVERWORLD)
+    assert gen_old.sample_biome_noise(0, 64, 0) is None
